@@ -1,0 +1,59 @@
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# ── Model & index artifacts ──────────────────────────────────────────────────
+chefmind-lora/
+outputs/
+faiss_index/
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+
+# ── Secrets & credentials ─────────────────────────────────────────────────────
+.env
+.env.*
+secrets.json
+*.token
+ngrok.yml
+
+# ── Google Drive / Colab ─────────────────────────────────────────────────────
+/content/
+drive/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs & caches ────────────────────────────────────────────────────────────
+*.log
+.cache/
+wandb/
+runs/
