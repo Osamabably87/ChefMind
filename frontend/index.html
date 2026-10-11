@@ -1,178 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>ChefMind</title>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap">
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChefMind</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="container">
 
-  <!-- Ambient glow blobs -->
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
+  <!-- Header -->
+  <header>
+    <h1>🍳 Chef<span>Mind</span></h1>
+    <p>AI-powered recipe generation with RAG</p>
+  </header>
 
-  <div class="wrapper">
+  <!-- API Connection -->
+  <div class="card">
+    <div class="api-bar">
+      <label>API</label>
+      <input type="text" id="apiUrl" placeholder="https://your-ngrok-url.ngrok-free.dev" />
+      <button class="btn-connect" onclick="checkConnection()">Connect →</button>
+    </div>
+    <div class="status" id="status">
+      <span class="dot"></span>
+      <span id="statusText">Enter your ngrok URL and click Connect</span>
+    </div>
+  </div>
 
-    <!-- NAV -->
-    <nav>
-      <div class="nav-logo">
-        <div class="nav-logo-mark">CM</div>
-        ChefMind
-      </div>
-      <div class="nav-actions">
-        <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()">◐</button>
-      </div>
-    </nav>
-
-    <!-- HERO -->
-    <div class="hero">
-      <div class="hero-tag"><span class="hero-tag-dot"></span>AI Chef</div>
-      <h1>Tell me what<br><strong>you have.</strong></h1>
-      <p class="hero-sub">Drop your ingredients and let ChefMind turn them into something extraordinary.</p>
+  <!-- Input Card -->
+  <div class="card">
+    <div class="section-label">Try a dish</div>
+    <div class="quick-picks">
+      <button class="quick-pick" onclick="quickPick('Lemon Chicken')">🍋 Lemon Chicken</button>
+      <button class="quick-pick" onclick="quickPick('Pasta Pomodoro')">🍅 Pasta Pomodoro</button>
+      <button class="quick-pick" onclick="quickPick('Asian Salmon')">🐟 Asian Salmon</button>
+      <button class="quick-pick" onclick="quickPick('Veggie Bake')">🥦 Veggie Bake</button>
+      <button class="quick-pick" onclick="quickPick('Beef Stew')">🥩 Beef Stew</button>
     </div>
 
-    <!-- PANEL -->
-    <div class="panel">
+    <div class="divider">or add your own</div>
 
-      <!-- API Row -->
-      <div class="api-row">
-        <span class="api-label">API</span>
-        <input class="api-input" id="apiUrl" type="text" placeholder="https://your-ngrok-url.ngrok-free.app">
-        <button class="api-connect" onclick="saveUrl()">Connect →</button>
+    <div class="section-label" style="margin-top:14px">Ingredients</div>
+    <div class="ing-row">
+      <input type="text" id="ingInput" placeholder="e.g. garlic, olive oil, pasta..."
+             onkeydown="if(event.key==='Enter') addIngredient()" />
+      <button class="btn-add" onclick="addIngredient()">+ Add</button>
+    </div>
+    <div class="tags" id="tags"></div>
+
+    <div class="prefs">
+      <select id="cuisine">
+        <option value="">Any cuisine</option>
+        <option>Italian</option><option>Asian</option><option>Mexican</option>
+        <option>Mediterranean</option><option>American</option><option>Middle Eastern</option>
+      </select>
+      <select id="time">
+        <option value="">Any time</option>
+        <option>Under 15 min</option><option>Under 30 min</option>
+        <option>Under 1 hour</option><option>Over 1 hour</option>
+      </select>
+      <select id="diet">
+        <option value="">No restriction</option>
+        <option>Vegetarian</option><option>Vegan</option>
+        <option>Gluten-free</option><option>Dairy-free</option><option>Keto</option>
+      </select>
+    </div>
+
+    <div class="banner" id="errorBanner">⚠ <span id="errorText"></span></div>
+
+    <button class="btn-generate" id="generateBtn" onclick="generateRecipe()">
+      <span id="btnIcon">✨</span>
+      <span id="btnText">Generate Recipe</span>
+    </button>
+  </div>
+
+  <!-- Recipe Result -->
+  <div class="card recipe-card" id="recipeCard">
+    <div class="recipe-hero">
+      <div class="icon">🍽️</div>
+      <h2 id="recipeName">Recipe</h2>
+    </div>
+    <div class="recipe-meta">
+      <div class="meta-item">
+        <div class="meta-label">Cook Time</div>
+        <div class="meta-value" id="cookTime">—</div>
       </div>
-      <div class="api-status-bar">
-        <div class="s-dot" id="sDot"></div>
-        <span id="sTxt">Loading…</span>
+      <div class="meta-item">
+        <div class="meta-label">Difficulty</div>
+        <div class="meta-value"><span class="badge" id="difficulty">—</span></div>
       </div>
-
-      <div class="panel-inner">
-
-        <!-- Quick pills -->
-        <div class="field-label">Try a dish</div>
-        <div class="pill-row">
-          <button class="quick-pill" onclick="setEx('chicken, garlic, lemon, rosemary')">🍋 Lemon Chicken</button>
-          <button class="quick-pill" onclick="setEx('pasta, tomatoes, basil, parmesan')">🍝 Pasta Pomodoro</button>
-          <button class="quick-pill" onclick="setEx('salmon, soy, ginger, sesame, lime')">🐟 Asian Salmon</button>
-          <button class="quick-pill" onclick="setEx('eggs, spinach, feta, mushrooms')">🥚 Veggie Bake</button>
-          <button class="quick-pill" onclick="setEx('beef, potatoes, carrots, thyme')">🥩 Beef Stew</button>
-        </div>
-
-        <div class="divider">or add your own</div>
-
-        <!-- Ingredient input -->
-        <div class="field-label">Ingredients</div>
-        <div class="ing-wrap">
-          <input class="ing-input" id="ingInp" type="text" placeholder="e.g. garlic, olive oil, pasta…"
-                 onkeydown="if(event.key==='Enter')addIng()">
-          <button class="add-btn" onclick="addIng()">+ Add</button>
-        </div>
-
-        <div class="chips" id="chips">
-          <span class="chips-empty" id="chipsEm">Your ingredients will appear here</span>
-        </div>
-
-        <!-- Preferences -->
-        <div class="field-label">Preferences</div>
-        <div class="prefs-grid">
-          <select class="pref-sel" id="cuisine">
-            <option value="">Any cuisine</option>
-            <option>Italian</option>
-            <option>Asian</option>
-            <option>Mediterranean</option>
-            <option>Mexican</option>
-            <option>American</option>
-            <option>Middle Eastern</option>
-            <option>French</option>
-            <option>Indian</option>
-          </select>
-          <select class="pref-sel" id="ptime">
-            <option value="">Any time</option>
-            <option>Under 15 min</option>
-            <option>Under 30 min</option>
-            <option>Under 1 hour</option>
-            <option>1–2 hours</option>
-          </select>
-          <select class="pref-sel" id="diet">
-            <option value="">No restriction</option>
-            <option>Vegetarian</option>
-            <option>Vegan</option>
-            <option>Gluten-free</option>
-            <option>Dairy-free</option>
-            <option>Keto</option>
-          </select>
-        </div>
-
-        <!-- Error message -->
-        <div class="err" id="errBox"></div>
-
-        <!-- Generate button -->
-        <button class="gen-btn" id="genBtn" onclick="generate()">
-          <div class="spinner"></div>
-          <span class="btn-label">Generate Recipe</span>
-        </button>
-
-      </div><!-- /panel-inner -->
-    </div><!-- /panel -->
-
-    <!-- RESULT -->
-    <div class="result" id="result">
-      <div class="result-card">
-
-        <div class="r-img" id="rImgWrap">
-          <div class="r-img-ph" id="rPh">🍽</div>
-          <img id="rImg" src="" alt="" style="display:none"
-               onload="this.style.display='block';document.getElementById('rPh').style.display='none'">
-          <div class="r-img-grad"></div>
-          <div class="r-img-title" id="rTitle"></div>
-        </div>
-
-        <div class="r-meta">
-          <div class="r-meta-item">
-            <div class="r-meta-key">Cook Time</div>
-            <div class="r-meta-val" id="rTime">—</div>
-          </div>
-          <div class="r-meta-item">
-            <div class="r-meta-key">Difficulty</div>
-            <div class="r-meta-val" id="rDiff">—</div>
-          </div>
-          <div class="r-meta-item">
-            <div class="r-meta-key">Servings</div>
-            <div class="r-meta-val" style="color:var(--lime)">2–4</div>
-          </div>
-        </div>
-
-        <div class="r-body">
-          <div>
-            <div class="r-section-head"><h3>Ingredients</h3></div>
-            <div class="ing-grid" id="rIngs"></div>
-          </div>
-          <div>
-            <div class="r-section-head"><h3>Instructions</h3></div>
-            <div class="steps" id="rSteps"></div>
-          </div>
-        </div>
-
-        <div class="r-actions">
-          <button class="action-btn" onclick="newRecipe()">↺ New Recipe</button>
-          <button class="action-btn primary-action" onclick="copyRecipe()">📋 Copy</button>
-        </div>
-
+      <div class="meta-item">
+        <div class="meta-label">Servings</div>
+        <div class="meta-value" id="servings">2–4</div>
       </div>
-    </div><!-- /result -->
+    </div>
+    <div class="recipe-section">
+      <h3>Ingredients</h3>
+      <div class="ing-grid" id="ingGrid"></div>
+    </div>
+    <div class="recipe-section">
+      <h3>Instructions</h3>
+      <div class="steps-list" id="stepsList"></div>
+    </div>
+    <div class="recipe-actions">
+      <button class="btn-action" onclick="newRecipe()">↺ New Recipe</button>
+      <button class="btn-action primary" onclick="copyRecipe()">📋 Copy</button>
+    </div>
+  </div>
 
-    <div class="footer">ChefMind &nbsp;·&nbsp; <span>✦</span> &nbsp;·&nbsp; Made with care</div>
+</div>
 
-  </div><!-- /wrapper -->
-
-  <!-- Script -->
-  <script src="js/main.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

@@ -1,117 +1,82 @@
 # 🍳 ChefMind — AI Recipe Generator
 
-> **بتدخّل المكونات اللي عندك، ChefMind بيطلّعلك وصفة كاملة.**
+> **Drop your ingredients. Get a complete recipe — instantly.**
+
+ChefMind is an end-to-end AI system that generates structured, culinary-quality recipes from freeform ingredient input. It combines a fine-tuned **LLaMA 3.1 8B** language model with a **Hybrid RAG pipeline** backed by 267,000+ real recipes, exposed through a lightweight REST API and a clean browser UI.
 
 ---
 
-## 💡 فكرة المشروع
+## ✨ Features
 
-كتير من الناس بتفتح التلاجة وبتلاقي مكونات متفرقة — فراخ، ثوم، ليمون، وربما معكرونة — وبتتساءل: أعمل إيه بالظبط؟
-
-**ChefMind** هو نظام ذكاء اصطناعي بيحل المشكلة دي. بتكتبله المكونات اللي عندك، وهو بيولّد ليك وصفة طبخ كاملة ومنظّمة تشمل:
-
-- 📛 **اسم الطبق**
-- 🥘 **قائمة المكونات** مع الكميات
-- 👨‍🍳 **خطوات الطبخ** مرتبة بالتفصيل
-- ⏱️ **وقت التحضير**
-- 📊 **درجة الصعوبة** (سهل / متوسط / صعب)
-
-مش بس كده — ممكن كمان تحدد **نوع المطبخ** (إيطالي، آسيوي، شرق أوسطي…)، **وقت الطبخ**، أو **قيود غذائية** (نباتي، خالي من الجلوتين…) وهو بيأخدها في الاعتبار.
+- **Ingredient-to-recipe generation** — type anything, get a complete dish
+- **Cuisine, time & dietary filters** — Italian, Vegan, Gluten-free, and more
+- **Hybrid retrieval** — FAISS (dense) + BM25 (sparse) with RRF fusion
+- **Cross-encoder re-ranking** — surfaces the most relevant context before generation
+- **Fine-tuned model** — LLaMA 3.1 8B trained on 20,000 real recipes via QLoRA
+- **Zero-dependency frontend** — pure HTML/CSS/JS, no build step required
+- **ngrok API bridge** — run the backend on Google Colab's free T4 GPU
 
 ---
 
-## 🧠 إزاي المشروع بيشتغل؟
+## 🧠 How It Works
 
-المشروع بيجمع تقنيتين مع بعض:
+### 1 — Fine-Tuning
+LLaMA 3.1 8B was fine-tuned on 20,000 human-written recipes using **QLoRA** (4-bit NF4), teaching the model to produce structured, culinary-aware responses rather than generic text completions.
 
-### 1. Fine-Tuning — تدريب النموذج على وصفات حقيقية
-
-خدنا نموذج لغة كبير هو **LLaMA 3.1 8B** وعملنا عليه **Fine-Tuning** باستخدام تقنية **LoRA (Low-Rank Adaptation)** على مجموعة من الوصفات الحقيقية.
-
-الهدف: إن النموذج يتعلم "يفكر" زي شيف — يعرف يكتب وصفة منظمة ومنطقية بدل ما يكون مجرد نموذج لغوي عام.
-
-### 2. RAG System — استرجاع المعلومات قبل التوليد
-
-بدل ما النموذج يعتمد بس على اللي اتعلمه في التدريب، ربطناه بـ **قاعدة بيانات ضخمة من الوصفات** (+267,000 وصفة). لما حد يسأل، النظام:
-
-1. **بيدور في قاعدة البيانات** على الوصفات الأقرب للمكونات المطلوبة
-2. **بيجيب أحسن النتايج** ويديها للنموذج كـ "سياق"
-3. **النموذج بيولّد** الوصفة النهائية بناءً على اللي لاقاه
-
-ده بيخلي الإجابات أدق وأكثر واقعية من الاعتماد على النموذج لوحده.
-
----
-
-## 📚 الـ Datasets المستخدمة
-
-| Dataset | المصدر | عدد الوصفات | الاستخدام |
-|---------|--------|-------------|-----------|
-| `tengomucho/simple_recipes` | HuggingFace | 20,000 | Fine-Tuning + RAG |
-| `rahul7star/food-recipes` | HuggingFace | 15,698 | RAG فقط |
-| `formido/recipes` | HuggingFace | 231,637 | RAG فقط |
-| **الإجمالي في RAG** | | **267,335** | قاعدة بيانات الاسترجاع |
-
----
-
-## 🔄 رحلة الـ Request من أولها لآخرها
+### 2 — Hybrid RAG
+At inference time the query is expanded into four variants, retrieved in parallel from a **FAISS** vector index and a **BM25** index, fused via **Reciprocal Rank Fusion**, then re-ranked with a **Cross-Encoder**. The top-3 documents are injected as context before generation.
 
 ```
-المستخدم يكتب: "chicken, garlic, lemon, rosemary"
-                        │
-                        ▼
-         ┌──────────────────────────┐
-         │   توليد 4 استعلامات     │
-         │  (multi-query expansion) │
-         └──────────┬───────────────┘
-                    │
-          ┌─────────┴──────────┐
-          ▼                    ▼
-   ┌─────────────┐      ┌─────────────┐
-   │ FAISS       │      │ BM25        │
-   │ (Dense)     │      │ (Sparse)    │
-   │ semantic    │      │ keyword     │
-   │ similarity  │      │ matching    │
-   └──────┬──────┘      └──────┬──────┘
-          └──────────┬──────────┘
-                     ▼
-           ┌──────────────────┐
-           │  RRF Fusion      │
-           │  (دمج النتايج)   │
-           └────────┬─────────┘
-                    ▼
-           ┌──────────────────┐
-           │ Cross-Encoder    │
-           │ Re-ranking       │
-           │ (أحسن 5 نتايج)  │
-           └────────┬─────────┘
-                    ▼
-           ┌──────────────────┐
-           │ LLaMA 3.1 8B     │
-           │ + LoRA Adapter   │
-           │ (توليد الوصفة)  │
-           └────────┬─────────┘
-                    ▼
-         { recipe_name, ingredients,
-           instructions, cooking_time,
-           difficulty }
+User query: "chicken, garlic, lemon, rosemary"
+        │
+        ▼
+┌─────────────────────────────┐
+│  Multi-query expansion (×4) │
+└──────────────┬──────────────┘
+               │
+    ┌──────────┴───────────┐
+    ▼                      ▼
+┌──────────┐          ┌──────────┐
+│  FAISS   │          │   BM25   │
+│  Dense   │          │  Sparse  │
+└────┬─────┘          └────┬─────┘
+     └──────────┬──────────┘
+                ▼
+       ┌─────────────────┐
+       │   RRF Fusion    │
+       └────────┬────────┘
+                ▼
+       ┌─────────────────┐
+       │ Cross-Encoder   │
+       │  Re-ranking     │
+       └────────┬────────┘
+                ▼
+       ┌─────────────────┐
+       │ LLaMA 3.1 8B   │
+       │  + LoRA Adapter │
+       └────────┬────────┘
+                ▼
+  { recipe_name, ingredients,
+    instructions, cooking_time,
+    difficulty }
 ```
 
 ---
 
-## 🏗️ هيكل المشروع
+## 📂 Project Structure
 
 ```
 ChefMind/
-├── frontend/                        # واجهة المستخدم
-│   ├── index.html                   # هيكل الصفحة
+├── frontend/
+│   ├── index.html          # App shell
 │   ├── css/
-│   │   └── style.css                # الستايل والتصميم
+│   │   └── style.css       # Styles
 │   └── js/
-│       └── app.js                   # منطق التطبيق (API, chips, rendering)
+│       └── app.js          # API client, rendering logic
 │
-├── notebooks/                       # نوتبوكات Google Colab
-│   ├── ChefMind_FineTuning1.ipynb   # تدريب LLaMA 3.1 8B بـ LoRA
-│   └── ChefMind_RAG_final.ipynb     # RAG Pipeline + API Server
+├── notebooks/
+│   ├── ChefMind_FineTuning.ipynb   # QLoRA training on LLaMA 3.1 8B
+│   └── ChefMind_RAG.ipynb          # Hybrid RAG pipeline + FastAPI server
 │
 ├── .gitignore
 └── README.md
@@ -119,70 +84,80 @@ ChefMind/
 
 ---
 
-## 🚀 تشغيل المشروع
+## 🚀 Getting Started
 
-### الخطوة 1 — تشغيل الـ Backend (Google Colab)
+### Step 1 — Run the Backend (Google Colab)
 
-1. افتح **`notebooks/ChefMind_RAG_final.ipynb`** في Google Colab مع GPU.
-2. شغّل كل الـ cells بالترتيب.
-3. آخر cell هيطلعلك **ngrok URL** — انسخه.
+1. Open `notebooks/ChefMind_RAG.ipynb` in [Google Colab](https://colab.research.google.com) with a **T4 GPU** runtime.
+2. Run all cells in order.
+3. The final cell starts a FastAPI server and prints an **ngrok URL** — copy it.
 
-> **أول مرة فقط:** الـ cells 2–3 بتبني الـ indexes من 267k وصفة (~15 دقيقة). احفظهم على Google Drive (cell 8) عشان المرة الجاية تحملهم مباشرة.
+> **First run only:** Cells 2–3 build FAISS and BM25 indexes from 267k recipes (~15 min). Save them to Google Drive (cell 8) so subsequent runs skip this step and load in seconds.
 
-### الخطوة 2 — فتح الـ Frontend
+### Step 2 — Open the Frontend
 
 ```bash
-# افتح مباشرة في المتصفح
+# Open directly in your browser
 open frontend/index.html
 
-# أو شغّل سيرفر محلي
-cd frontend
-python -m http.server 8080
-# ثم افتح http://localhost:8080
+# Or serve locally
+cd frontend && python -m http.server 8080
+# then visit http://localhost:8080
 ```
 
-الصق الـ ngrok URL في خانة **API** واضغط **Connect →** — لما النقطة تتحول خضرا، الكل شغّال.
+Paste the ngrok URL into the **API** field and click **Connect →**. When the dot turns green, you're ready.
 
-### الخطوة 3 — إعادة التدريب (اختياري)
+### Step 3 — Re-train (Optional)
 
-الـ LoRA adapter موجود جاهز على HuggingFace: [`Osamaelbably87/chefmind-lora`](https://huggingface.co/Osamaelbably87/chefmind-lora).
+The LoRA adapter is published on HuggingFace: [`Osamaelbably87/chefmind-lora`](https://huggingface.co/Osamaelbably87/chefmind-lora).
 
-لو عايز تعيد التدريب أو تعدّل عليه، افتح **`notebooks/ChefMind_FineTuning1.ipynb`**.
-
----
-
-## ⚙️ تفاصيل الـ Fine-Tuning
-
-| إعداد | القيمة |
-|-------|--------|
-| النموذج الأساسي | `unsloth/Meta-Llama-3.1-8B-Instruct` |
-| تقنية التدريب | QLoRA (4-bit NF4) |
-| LoRA Rank | 16، Alpha 64 |
-| الـ Target Modules | q, k, v, o, gate, up, down projections |
-| حجم الـ Dataset | 20,000 وصفة |
-| عدد الـ Steps | 100 |
-| Final Loss | 1.30 |
-| GPU | Tesla T4 (Google Colab) |
-| وقت التدريب | ~2.4 ساعة |
+To retrain or experiment, open `notebooks/ChefMind_FineTuning.ipynb`.
 
 ---
 
-## ⚙️ تفاصيل الـ RAG Pipeline
+## 📊 Datasets
 
-| المكوّن | التقنية |
-|---------|---------|
-| Dense Retrieval | FAISS + `all-MiniLM-L6-v2` |
-| Sparse Retrieval | BM25 (rank-bm25) |
-| Fusion | Reciprocal Rank Fusion (RRF) |
-| Re-ranking | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
-| Chunk Size | 500 token, overlap 50 |
-| Top-K Retrieval | 10 docs → rerank → top 5 |
+| Dataset | Source | Recipes | Used For |
+|---|---|---|---|
+| `tengomucho/simple_recipes` | HuggingFace | 20,000 | Fine-tuning + RAG |
+| `rahul7star/food-recipes` | HuggingFace | 15,698 | RAG only |
+| `formido/recipes` | HuggingFace | 231,637 | RAG only |
+| **Total (RAG index)** | | **267,335** | Retrieval corpus |
 
 ---
 
-## 🔌 الـ API
+## ⚙️ Fine-Tuning Configuration
 
-**Base URL:** ngrok URL بتاعك
+| Parameter | Value |
+|---|---|
+| Base model | `unsloth/Meta-Llama-3.1-8B-Instruct` |
+| Technique | QLoRA — 4-bit NF4 quantization |
+| LoRA rank / alpha | 16 / 64 |
+| Target modules | q, k, v, o, gate, up, down projections |
+| Training examples | 20,000 recipes |
+| Steps | 100 |
+| Final loss | 1.30 |
+| Hardware | Tesla T4 (Google Colab free tier) |
+| Training time | ~2.4 hours |
+
+---
+
+## ⚙️ RAG Pipeline Configuration
+
+| Component | Technology |
+|---|---|
+| Dense retrieval | FAISS + `sentence-transformers/all-MiniLM-L6-v2` |
+| Sparse retrieval | BM25 (`rank-bm25`) |
+| Fusion strategy | Reciprocal Rank Fusion (RRF) |
+| Re-ranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| Chunk size | 500 tokens, 50-token overlap |
+| Retrieval depth | Top-10 → re-rank → Top-3 injected as context |
+
+---
+
+## 🔌 API Reference
+
+**Base URL:** your ngrok URL
 
 ### `GET /`
 ```json
@@ -190,29 +165,30 @@ python -m http.server 8080
 ```
 
 ### `POST /recipe`
-**Request:**
+
+**Request**
 ```json
 { "query": "chicken, garlic, lemon, rosemary, Italian style" }
 ```
 
-**Response:**
+**Response**
 ```json
 {
   "recipe_name":  "Rosemary Lemon Chicken",
-  "ingredients":  "2 chicken breasts, 4 garlic cloves (minced), ...",
-  "instructions": "1. Marinate chicken with lemon and rosemary. 2. ...",
+  "ingredients":  [{ "name": "chicken breast", "quantity": "2 pieces" }, ...],
+  "instructions": ["Step 1: ...", "Step 2: ...", ...],
   "cooking_time": "35 minutes",
   "difficulty":   "Easy"
 }
 ```
 
-الـ Interactive docs موجودة على `<ngrok-url>/docs`.
+Interactive Swagger docs are available at `<ngrok-url>/docs`.
 
 ---
 
-## 📦 المتطلبات
+## 📦 Dependencies
 
-الـ Backend شغّال بالكامل على **Google Colab** (T4 GPU مجاني كافي):
+The backend runs entirely on **Google Colab** — a free T4 GPU is sufficient:
 
 ```
 transformers==4.52.4  peft  accelerate  bitsandbytes  trl
@@ -221,14 +197,14 @@ faiss-cpu  rank-bm25  sentence-transformers
 fastapi  uvicorn  pyngrok  nest-asyncio
 ```
 
-الـ Frontend **مفيهوش أي dependencies** — متصفح عادي كافي.
+The frontend has **zero dependencies** — any modern browser works.
 
 ---
 
 ## 📄 License
 
-MIT
+MIT — free to use, modify, and distribute.
 
 ---
 
-*صُنع بعناية · Powered by LLaMA 3.1 8B + LoRA + Hybrid RAG*
+*Built with care · Powered by LLaMA 3.1 8B + QLoRA + Hybrid RAG*
