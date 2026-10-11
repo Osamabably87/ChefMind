@@ -43,8 +43,7 @@
 
     <div class="section-label" style="margin-top:14px">Ingredients</div>
     <div class="ing-row">
-      <input type="text" id="ingInput" placeholder="e.g. garlic, olive oil, pasta..."
-             onkeydown="if(event.key==='Enter') addIngredient()" />
+      <input type="text" id="ingInput" placeholder="e.g. garlic, olive oil, pasta..." onkeydown="if(event.key==='Enter') addIngredient()" />
       <button class="btn-add" onclick="addIngredient()">+ Add</button>
     </div>
     <div class="tags" id="tags"></div>
@@ -73,13 +72,21 @@
       <span id="btnIcon">✨</span>
       <span id="btnText">Generate Recipe</span>
     </button>
+
   </div>
 
   <!-- Recipe Result -->
   <div class="card recipe-card" id="recipeCard">
-    <div class="recipe-hero">
-      <div class="icon">🍽️</div>
-      <h2 id="recipeName">Recipe</h2>
+    <div class="recipe-img-wrap" id="recipeImgWrap">
+      <img class="recipe-img" id="recipeImg" alt="" />
+      <div class="recipe-img-overlay"></div>
+      <div class="recipe-hero">
+        <div class="icon">🍽️</div>
+        <h2 id="recipeName">Recipe</h2>
+      </div>
+    </div>
+    <div class="nutrition-bar" id="nutritionBar">
+      <div class="nutr-loading">Calculating nutrition…</div>
     </div>
     <div class="recipe-meta">
       <div class="meta-item">
@@ -109,8 +116,12 @@
     </div>
   </div>
 
-</div>
+  <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:8px;">
+    📸 Photos: <a href="https://unsplash.com" target="_blank" style="color:var(--muted)">Unsplash</a>
+    &nbsp;·&nbsp; 🥗 Nutrition: Local DB (estimated per serving)
+  </p>
 
+</div>
 <script src="js/app.js"></script>
 </body>
 </html>
