@@ -1,11 +1,15 @@
-# 🍳 ChefMind — AI Recipe Generator with Hybrid RAG
+# 🍳 ChefMind — AI-Powered Recipe Generator
 
-> **LLaMA 3.1 8B fine-tuned on 267k+ recipes, augmented with a hybrid FAISS + BM25 retrieval pipeline and a polished mobile-first web frontend.**
+> **Tell ChefMind what's in your fridge. Get a complete, structured recipe in seconds — powered by a fine-tuned LLaMA 3.1 8B model and a hybrid RAG pipeline trained on 267,000+ real recipes.**
 
 ---
 
 ## Table of Contents
 
+- [The Idea](#the-idea)
+- [The Problem We're Solving](#the-problem-were-solving)
+- [Why We Built This](#why-we-built-this)
+- [How It Works — Simply Put](#how-it-works--simply-put)
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
@@ -17,6 +21,67 @@
 - [API Reference](#api-reference)
 - [Quick Start](#quick-start)
 - [Security Notes](#security-notes)
+
+---
+
+## 💡 The Idea
+
+We've all been there — it's 7pm, the fridge has some chicken, a lemon, garlic, and leftover rice, and the question is: *"what do I actually make with this?"*
+
+You open Google. You get a list of 40 results. You click one, scroll past the author's life story, finally find the recipe, and realize you're missing three ingredients. You close the tab. You order pizza.
+
+**ChefMind fixes that.**
+
+Type in what you have. Pick a cuisine or dietary preference if you want. Hit generate. In under 30 seconds you get a complete recipe — proper ingredients with quantities, numbered steps, cook time, difficulty, nutrition estimate, and a photo — built around exactly what you already have.
+
+No scrolling. No missing ingredients. No life stories.
+
+---
+
+## 🔍 The Problem We're Solving
+
+Recipe apps and search engines today have two big issues:
+
+**1. They search for recipes, they don't generate them.**
+Google and recipe sites match your query to pre-written recipes. If you have chicken, garlic, and lemons, you get "lemon chicken" recipes that need 12 more things you don't have. There's no system that looks at *your specific ingredients* and builds something custom around them.
+
+**2. Generic AI chatbots hallucinate recipes.**
+Ask ChatGPT for a recipe and it'll give you something that sounds plausible but might have wrong proportions, nonsensical steps, or ingredients that don't belong together. It's generating text, not drawing on actual culinary knowledge.
+
+**ChefMind solves both:**
+- It generates a recipe tailored to your ingredients, not a pre-written one
+- It grounds that generation in 267,000 real recipes retrieved from a culinary database, so the output reflects actual cooking knowledge, not guesswork
+
+---
+
+## 🎯 Why We Built This
+
+The project started from a simple frustration: AI language models are impressive, but when you ask them to cook something, they often get it wrong in subtle ways — wrong ratios, made-up techniques, or dishes that technically work but nobody would actually want to eat.
+
+We wanted to see if combining two approaches could fix this:
+
+1. **Fine-tuning** — Train a model specifically on recipe data so it "thinks" like a chef, not like a general-purpose text predictor
+2. **Retrieval-Augmented Generation (RAG)** — Before generating anything, fetch the most relevant real recipes from a database of 267k dishes and show them to the model as reference
+
+The hypothesis was: *a model that has been trained on recipes AND can look up real examples at query time will produce dramatically better output than either approach alone.*
+
+That hypothesis turned out to be correct. The combination produces structured, coherent, realistic recipes that a home cook can actually follow — something that neither a generic LLM nor a pure search engine delivers on its own.
+
+---
+
+## 🧠 How It Works — Simply Put
+
+Think of ChefMind like a very knowledgeable sous-chef who:
+
+1. **Searches the cookbook library** — When you type "chicken, garlic, lemon", ChefMind searches a database of 267,000 real recipes using two methods simultaneously: one that understands meaning ("poultry with citrus") and one that matches exact words ("lemon chicken"). The best matches from both get combined.
+
+2. **Picks the most relevant examples** — A ranking model reads the top results and picks the 3 most relevant recipes to use as reference.
+
+3. **Creates something new** — A fine-tuned AI model (LLaMA 3.1 8B, trained specifically on recipe data) reads those 3 reference recipes and your ingredients, then writes a new recipe tailored to exactly what you have.
+
+4. **Presents it cleanly** — The result comes back as a structured card: photo, nutrition bar, cook time, difficulty, ingredients with quantities, and numbered steps.
+
+The whole process takes 10–30 seconds on a GPU.
 
 ---
 
